@@ -72,11 +72,12 @@ def create_db_tables(conn):
     """ Create the tables for the SQLite3 database
     """
     # SQL for each table creation
-    sql_snp = """ DROP TABLE IF EXISTS snp;
-                  CREATE TABLE snp (snp_id TEXT,
-                                    chromosome TEXT,
-                                    position INTEGER,
-                                    PRIMARY KEY(snp_id));
+    sql_snp = """ DROP TABLE IF EXISTS snp_location;
+                  CREATE TABLE snp_location (snp_id TEXT,
+                                             hg_version TEXT,
+                                             chromosome TEXT,
+                                             position INTEGER,
+                                             PRIMARY KEY(snp_id, hg_version));
               """
     sql_gtype = """ DROP TABLE IF EXISTS genotypes;
                     CREATE TABLE genotypes 
@@ -105,7 +106,7 @@ def create_db_tables(conn):
                                 ON DELETE CASCADE);
                         """
     # Create each table in turn
-    for tname, sql in [("snp", sql_snp), 
+    for tname, sql in [("snp_location", sql_snp), 
                        ("genotype", sql_gtype), 
                        ("person", sql_person), 
                        ("person_gtype", sql_person_gtype)]:

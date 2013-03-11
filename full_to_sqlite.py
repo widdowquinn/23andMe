@@ -27,12 +27,9 @@ def parse_cmdline(args):
     """ Parse command-line arguments. Note that the database filename is
         a positional argument
     """
-    usage = "usage: %prog [options] <name> <snpfile> <database>"
+    usage = "usage: %prog [options] <name> <snpfile> <human asm build No> " +\
+             "<database>"
     parser = OptionParser(usage)
-    parser.add_option("-n", "--newdb", dest="newdb",
-                      action="store_true", default=False,
-                      help="Set to true if this is the first entry in " +\
-                          "the database")
     parser.add_option("-v", "--verbose", dest="verbose",
                       action="store_true", default=False,
                       help="Give verbose output")
@@ -53,7 +50,7 @@ def get_db_connection(filename):
     return conn
 
 # Parse data from file and populate database
-def populate_db(name, snpfile, conn, newdb=False):
+def populate_db(name, snpfile, asm, conn):
     """ Using the database with the connection in conn, add data for the named
         person from the passed snpfile
     """
@@ -80,11 +77,17 @@ def populate_db(name, snpfile, conn, newdb=False):
                     if not row[0].startswith('#'):   # ignore comments
                         rsid, chrm, pos, gt = tuple(row)
                         pos = int(pos)
-                        # Add snp, if necessary:
-                        if newdb:
-                            sql = "INSERT INTO snp(snp_id, chromosome, " +\
-                                "position) VALUES (?, ?, ?)"
-                            cur.execute(sql, (rsid, chrm, pos))
+                        # Add snp location
+                        try:
+                            sql = "INSERT INTO snp_location(snp_id, " +\
+                                "hg_version, chromosome, " +\
+                                "position) VALUES (?, ?, ?, ?)"
+                            cur.execute(sql, (rsid, asm, chrm, pos))
+                        except sqlite3.IntegrityError:
+                            # This will throw an error if the SNP location (on
+                            # this HG build) is already found in the db
+                            logger.warning("SNP %s position " % rsid +\
+                             "on HG assembly build %s already present" % asm)
                         # Insert genotype
                         try:
                             sql = "INSERT INTO genotypes(snp_id, genotype) " +\
@@ -95,7 +98,6 @@ def populate_db(name, snpfile, conn, newdb=False):
                             # in the db
                             logger.warning("Genotype %s already " % gt +\
                                             "present for SNP %s" % rsid)
-                            pass
                         # Link individual to genotype
                         try:
                             sql = "INSERT INTO person_gtype(person_id, " +\
@@ -137,13 +139,13 @@ if __name__ == '__main__':
     logger.info(args)
 
     # Throw an error if we don't have positional arguments
-    if len(args) != 3:
-        logger.error("Script requires three arguments, %d given " % len(args) +\
+    if len(args) != 4:
+        logger.error("Script requires four arguments, %d given " % len(args) +\
                          "(exiting)")
         sys.exit(1)
 
     # Make database connection
-    conn = get_db_connection(args[2])
+    conn = get_db_connection(args[-1])
 
     # Populate database from file
-    populate_db(args[0], args[1], conn, newdb=options.newdb)
+    populate_db(args[0], args[1], args[2], conn)
