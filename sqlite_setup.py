@@ -2,11 +2,10 @@
 #
 # sqlite_setup.py
 #
-# Creates a new SQLite3 database to contain 23andMe-associated data for 
-# processing with this module
+# Creates a new SQLite3 database to contain 23andMe-associated data
 
 ###
-# IMPORTS 
+# IMPORTS
 
 from optparse import OptionParser
 from process_exceptions import last_exception
@@ -18,13 +17,14 @@ import re
 import sys
 import sqlite3
 
+
 ###
 # FUNCTIONS
 
 # Parse cmd-line
 def parse_cmdline(args):
-    """ Parse command-line arguments. Note that the database filename is
-        a positional argument
+    """Parse command-line arguments. Note that the database filename is
+    a positional argument.
     """
     usage = "usage: %prog [options] <database>"
     parser = OptionParser(usage)
@@ -33,10 +33,10 @@ def parse_cmdline(args):
                       help="Give verbose output")
     return parser.parse_args()
 
+
 # Connect to database
 def get_db_connection(filename):
-    """ Make a connection to an SQLite database
-    """
+    """Make a connection to an SQLite database."""
     try:
         conn = sqlite3.connect(filename)
     except:
@@ -45,13 +45,13 @@ def get_db_connection(filename):
         sys.exit(1)
     return conn
 
+
 # Create database views
 def create_db_views(conn):
-    """ Create views on the database
-    """
+    """Create views on the database."""
     sql_snpcount = """ DROP VIEW IF EXISTS snp_counts;
-                       CREATE VIEW snp_counts 
-                         AS SELECT snp_id, COUNT(*) as count 
+                       CREATE VIEW snp_counts
+                         AS SELECT snp_id, COUNT(*) as count
                               FROM genotypes GROUP BY snp_id;
                    """
     # Create each view in turn
@@ -69,8 +69,7 @@ def create_db_views(conn):
 
 # Create database tables
 def create_db_tables(conn):
-    """ Create the tables for the SQLite3 database
-    """
+    """Create the tables for the SQLite3 database."""
     # SQL for each table creation
     sql_snp = """ DROP TABLE IF EXISTS snp_location;
                   CREATE TABLE snp_location (snp_id TEXT,
@@ -80,7 +79,7 @@ def create_db_tables(conn):
                                              PRIMARY KEY(snp_id, hg_version));
               """
     sql_gtype = """ DROP TABLE IF EXISTS genotypes;
-                    CREATE TABLE genotypes 
+                    CREATE TABLE genotypes
                         (snp_id TEXT NOT NULL,
                          genotype TEXT NOT NULL,
                          PRIMARY KEY(snp_id, genotype),
@@ -98,17 +97,17 @@ def create_db_tables(conn):
                               snp_id INTEGER NOT NULL,
                               genotype TEXT NOT NULL,
                               PRIMARY KEY(person_id, snp_id, genotype),
-                              FOREIGN KEY(person_id) 
+                              FOREIGN KEY(person_id)
                                 REFERENCES person(person_id)
                                 ON DELETE CASCADE,
-                              FOREIGN KEY(snp_id, genotype) 
+                              FOREIGN KEY(snp_id, genotype)
                                 REFERENCES snp(snp_id, genotype)
                                 ON DELETE CASCADE);
                         """
     # Create each table in turn
-    for tname, sql in [("snp_location", sql_snp), 
-                       ("genotype", sql_gtype), 
-                       ("person", sql_person), 
+    for tname, sql in [("snp_location", sql_snp),
+                       ("genotype", sql_gtype),
+                       ("person", sql_person),
                        ("person_gtype", sql_person_gtype)]:
         with conn:
             cur = conn.cursor()
@@ -124,17 +123,15 @@ def create_db_tables(conn):
 # SCRIPT
 
 if __name__ == '__main__':
-    
     # Parse command-line
     options, args = parse_cmdline(sys.argv)
-    
+
     # We set up logging, and modify loglevel according to whether we need
     # verbosity or not
     logger = logging.getLogger('sqlite_setup.py')
     logger.setLevel(logging.DEBUG)
     err_handler = logging.StreamHandler(sys.stderr)
-    err_formatter = \
-                  logging.Formatter('%(levelname)s: %(message)s')
+    err_formatter = logging.Formatter('%(levelname)s: %(message)s')
     err_handler.setFormatter(err_formatter)
     if options.verbose:
         err_handler.setLevel(logging.INFO)
@@ -148,10 +145,10 @@ if __name__ == '__main__':
 
     # Throw an error if we don't have positional arguments
     if len(args) != 1:
-        logger.error("Not enough arguments: script requires database name " +\
-                         "(exiting)")
+        logger.error("Not enough arguments: script requires database name " +
+                     "(exiting)")
         sys.exit(1)
-        
+
     # Get conection to database
     conn = get_db_connection(args[0])
 

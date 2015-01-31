@@ -5,10 +5,10 @@
 import sys
 import traceback
 
+
 # Report last exception as string
 def last_exception():
-    """ Returns last exception as a string
-    """
+    """Returns last exception as a string."""
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    return ''.join(traceback.format_exception(exc_type, exc_value, 
+    return ''.join(traceback.format_exception(exc_type, exc_value,
                                               exc_traceback))

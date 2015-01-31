@@ -6,7 +6,7 @@
 # prepared using the sqlite_setup.py script
 
 ###
-# IMPORTS 
+# IMPORTS
 
 from optparse import OptionParser
 from process_exceptions import last_exception
@@ -19,26 +19,27 @@ import re
 import sys
 import sqlite3
 
+
 ###
 # FUNCTIONS
 
 # Parse cmd-line
 def parse_cmdline(args):
-    """ Parse command-line arguments. Note that the database filename is
-        a positional argument
+    """Parse command-line arguments. Note that the database filename is
+    a positional argument.
     """
     usage = "usage: %prog [options] <name> <snpfile> <human asm build No> " +\
-             "<database>"
+            "<database>"
     parser = OptionParser(usage)
     parser.add_option("-v", "--verbose", dest="verbose",
                       action="store_true", default=False,
                       help="Give verbose output")
     return parser.parse_args()
 
+
 # Connect to database
 def get_db_connection(filename):
-    """ Make a connection to an SQLite database
-    """
+    """Make a connection to an SQLite database."""
     try:
         logger.info("Connecting to database: %s" % filename)
         conn = sqlite3.connect(filename)
@@ -49,10 +50,11 @@ def get_db_connection(filename):
         sys.exit(1)
     return conn
 
+
 # Parse data from file and populate database
 def populate_db(name, snpfile, asm, conn):
-    """ Using the database with the connection in conn, add data for the named
-        person from the passed snpfile
+    """Using the database with the connection in conn, add data for the named
+    person from the passed snpfile.
     """
     # Get filehandle
     try:
@@ -67,7 +69,7 @@ def populate_db(name, snpfile, asm, conn):
         with conn:
             cur = conn.cursor()
             # Populate the person table. At the mom
-            sql = "INSERT INTO person(name) VALUES (?)" 
+            sql = "INSERT INTO person(name) VALUES (?)"
             cur.execute(sql, (name, ))
             person_id = cur.lastrowid
             # Parse the SNP file
@@ -80,14 +82,15 @@ def populate_db(name, snpfile, asm, conn):
                         # Add snp location
                         try:
                             sql = "INSERT INTO snp_location(snp_id, " +\
-                                "hg_version, chromosome, " +\
-                                "position) VALUES (?, ?, ?, ?)"
+                                  "hg_version, chromosome, " +\
+                                  "position) VALUES (?, ?, ?, ?)"
                             cur.execute(sql, (rsid, asm, chrm, pos))
                         except sqlite3.IntegrityError:
                             # This will throw an error if the SNP location (on
                             # this HG build) is already found in the db
-                            logger.warning("SNP %s position " % rsid +\
-                             "on HG assembly build %s already present" % asm)
+                            logger.warning("SNP %s position " % rsid +
+                                           "on HG assembly build " +
+                                           "%s already present" % asm)
                         # Insert genotype
                         try:
                             sql = "INSERT INTO genotypes(snp_id, genotype) " +\
@@ -96,16 +99,16 @@ def populate_db(name, snpfile, asm, conn):
                         except sqlite3.IntegrityError:
                             # This will throw an error if the genotype exists
                             # in the db
-                            logger.warning("Genotype %s already " % gt +\
-                                            "present for SNP %s" % rsid)
+                            logger.warning("Genotype %s already " % gt +
+                                           "present for SNP %s" % rsid)
                         # Link individual to genotype
                         try:
                             sql = "INSERT INTO person_gtype(person_id, " +\
-                                     "snp_id, genotype) VALUES (?, ?, ?)"
+                                  "snp_id, genotype) VALUES (?, ?, ?)"
                             cur.execute(sql, (person_id, rsid, gt))
                         except:
-                            logger.error("Problem populating database at " +\
-                                             "row %s (exiting)" % row)
+                            logger.error("Problem populating database at " +
+                                         "row %s (exiting)" % row)
                             sys.exit(1)
             except:
                 logger.error("Problem parsing SNP file %s" % snpfile)
@@ -116,17 +119,16 @@ def populate_db(name, snpfile, asm, conn):
 # SCRIPT
 
 if __name__ == '__main__':
-    
+
     # Parse command-line
     options, args = parse_cmdline(sys.argv)
-    
+
     # We set up logging, and modify loglevel according to whether we need
     # verbosity or not
-    logger = logging.getLogger('sqlite_setup.py')
+    logger = logging.getLogger('full_to_sqlite.py')
     logger.setLevel(logging.DEBUG)
     err_handler = logging.StreamHandler(sys.stderr)
-    err_formatter = \
-                  logging.Formatter('%(levelname)s: %(message)s')
+    err_formatter = logging.Formatter('%(levelname)s: %(message)s')
     err_handler.setFormatter(err_formatter)
     if options.verbose:
         err_handler.setLevel(logging.INFO)
@@ -140,8 +142,8 @@ if __name__ == '__main__':
 
     # Throw an error if we don't have positional arguments
     if len(args) != 4:
-        logger.error("Script requires four arguments, %d given " % len(args) +\
-                         "(exiting)")
+        logger.error("Script requires four arguments, %d given " % len(args) +
+                     "(exiting)")
         sys.exit(1)
 
     # Make database connection
